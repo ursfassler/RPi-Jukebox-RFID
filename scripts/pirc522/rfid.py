@@ -1,25 +1,6 @@
 import threading
-
-RASPBERRY = object()
-BEAGLEBONE = object()
-board = RASPBERRY
-try:
-    # Try with Raspberry PI imports first
-    import spidev
-    import RPi.GPIO as GPIO
-    SPIClass = spidev.SpiDev
-    def_pin_rst = 22
-    def_pin_irq = 18
-    def_pin_mode = GPIO.BOARD
-except ImportError:
-    # If they failed, try with Beaglebone
-    import Adafruit_BBIO.SPI as SPI
-    import Adafruit_BBIO.GPIO as GPIO
-    SPIClass = SPI.SPI
-    board = BEAGLEBONE
-    def_pin_rst = "P9_23"
-    def_pin_irq = "P9_15"
-    def_pin_mode = None
+import spidev
+import RPi.GPIO as GPIO
 
 class RFID(object):
     pin_rst = 22
@@ -58,31 +39,22 @@ class RFID(object):
     authed = False
     irq = threading.Event()
 
-    def __init__(self, bus=0, device=0, speed=1000000, pin_rst=def_pin_rst,
-            pin_ce=0, pin_irq=def_pin_irq, pin_mode = def_pin_mode):
-        self.pin_rst = pin_rst
-        self.pin_ce = pin_ce
-        self.pin_irq = pin_irq
+    def __init__(self):
+        self.spi = spidev.SpiDev()
+        self.spi.open(0, 0)
+        self.spi.max_speed_hz = 1000000
 
-        self.spi = SPIClass()
-        self.spi.open(bus, device)
-        if board == RASPBERRY:
-            self.spi.max_speed_hz = speed
-        else:
-            self.spi.mode = 0
-            self.spi.msh = speed
+        GPIO.setmode(GPIO.BOARD)
 
-        if pin_mode is not None:
-            GPIO.setmode(pin_mode)
-        if pin_rst != 0:
-            GPIO.setup(pin_rst, GPIO.OUT)
-            GPIO.output(pin_rst, 1)
-        GPIO.setup(pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(pin_irq, GPIO.FALLING,
+        GPIO.setup(self.pin_rst, GPIO.OUT)
+        GPIO.output(self.pin_rst, 1)
+
+        GPIO.setup(self.pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(self.pin_irq, GPIO.FALLING,
                 callback=self.irq_callback)
-        if pin_ce != 0:
-            GPIO.setup(pin_ce, GPIO.OUT)
-            GPIO.output(pin_ce, 1)
+        if self.pin_ce != 0:
+            GPIO.setup(self.pin_ce, GPIO.OUT)
+            GPIO.output(self.pin_ce, 1)
         self.init()
 
     def init(self):
@@ -259,4 +231,3 @@ class RFID(object):
     def reset(self):
         authed = False
         self.dev_write(0x01, self.mode_reset)
-
