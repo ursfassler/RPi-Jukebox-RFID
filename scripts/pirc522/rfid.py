@@ -8,28 +8,10 @@ class RFID(object):
     pin_irq = 18
 
     mode_idle = 0x00
-    mode_auth = 0x0E
-    mode_receive = 0x08
-    mode_transmit = 0x04
     mode_transrec = 0x0C
     mode_reset = 0x0F
-    mode_crc = 0x03
 
-    auth_a = 0x60
-    auth_b = 0x61
-
-    act_read = 0x30
-    act_write = 0xA0
-    act_increment = 0xC1
-    act_decrement = 0xC0
-    act_restore = 0xC2
-    act_transfer = 0xB0
-
-    act_reqidl = 0x26
-    act_reqall = 0x52
     act_anticl = 0x93
-    act_select = 0x93
-    act_end = 0x50
 
     reg_tx_control = 0x14
     length = 16
@@ -98,7 +80,7 @@ class RFID(object):
         else:
             self.clear_bitmask(self.reg_tx_control, 0x03)
 
-    def card_write(self, command, data):
+    def card_write(self, data):
         back_data = []
         back_length = 0
         error = False
@@ -107,12 +89,8 @@ class RFID(object):
         last_bits = None
         n = 0
 
-        if command == self.mode_auth:
-            irq = 0x12
-            irq_wait = 0x10
-        if command == self.mode_transrec:
-            irq = 0x77
-            irq_wait = 0x30
+        irq = 0x77
+        irq_wait = 0x30
 
         self.dev_write(0x02, irq | 0x80)
         self.clear_bitmask(0x04, 0x80)
@@ -122,10 +100,9 @@ class RFID(object):
         for i in range(len(data)):
             self.dev_write(0x09, data[i])
 
-        self.dev_write(0x01, command)
+        self.dev_write(0x01, self.mode_transrec)
 
-        if command == self.mode_transrec:
-            self.set_bitmask(0x0D, 0x80)
+        self.set_bitmask(0x0D, 0x80)
 
         i = 2000
         while True:
@@ -144,22 +121,21 @@ class RFID(object):
                     print("E1")
                     error = True
 
-                if command == self.mode_transrec:
-                    n = self.dev_read(0x0A)
-                    last_bits = self.dev_read(0x0C) & 0x07
-                    if last_bits != 0:
-                        back_length = (n - 1) * 8 + last_bits
-                    else:
-                        back_length = n * 8
+                n = self.dev_read(0x0A)
+                last_bits = self.dev_read(0x0C) & 0x07
+                if last_bits != 0:
+                    back_length = (n - 1) * 8 + last_bits
+                else:
+                    back_length = n * 8
 
-                    if n == 0:
-                        n = 1
+                if n == 0:
+                    n = 1
 
-                    if n > self.length:
-                        n = self.length
+                if n > self.length:
+                    n = self.length
 
-                    for i in range(n):
-                        back_data.append(self.dev_read(0x09))
+                for i in range(n):
+                    back_data.append(self.dev_read(0x09))
             else:
                 print("E2")
                 error = True
@@ -175,7 +151,7 @@ class RFID(object):
         back_bits = 0
 
         self.dev_write(0x0D, 0x07)
-        (error, back_data, back_bits) = self.card_write(self.mode_transrec, [req_mode, ])
+        (error, back_data, back_bits) = self.card_write([req_mode, ])
 
         if error or (back_bits != 0x10):
             return (True, None)
@@ -196,7 +172,7 @@ class RFID(object):
         serial_number.append(self.act_anticl)
         serial_number.append(0x20)
 
-        (error, back_data, back_bits) = self.card_write(self.mode_transrec, serial_number)
+        (error, back_data, back_bits) = self.card_write(serial_number)
         if not error:
             if len(back_data) == 5:
                 for i in range(4):
