@@ -10,6 +10,7 @@ import sys
 import serial
 import string
 import RPi.GPIO as GPIO
+import time
 
 from evdev import InputDevice, categorize, ecodes, list_devices
 #import MFRC522
@@ -83,6 +84,8 @@ class Mfrc522Reader(object):
             if error:
                 print("card is gone")
                 return
+            else:
+                time.sleep(0.1)
 
     @staticmethod
     def cleanup():
