@@ -296,7 +296,7 @@ if [ "$DEBUG" == "true" ]; then echo "# Type of play \$VALUE: $VALUE" >> $PATHDA
 # - $FOLDER is set (! -z ${FOLDER+x})
 # - AND (-a) 
 # - and points to existing directory (-d "${AUDIOFOLDERSPATH}/${FOLDER}")
-if [ ! -z "$FOLDER" -a ! -z ${FOLDER+x} -a -d "${AUDIOFOLDERSPATH}/${FOLDER}" ]; then
+if test ! -z "$FOLDER" && test ! -z ${FOLDER+x} && test -d "${AUDIOFOLDERSPATH}/${FOLDER}"; then
 
     if [ "$DEBUG" == "true" ]; then echo "\$FOLDER set, not empty and dir exists: ${AUDIOFOLDERSPATH}/${FOLDER}" >> $PATHDATA/../logs/debug.log; fi
 
