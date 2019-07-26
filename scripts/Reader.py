@@ -51,21 +51,38 @@ class UsbReader(object):
 class Mfrc522Reader(object):
     def __init__(self):
         self.device = pirc522.RFID()
+        self.card_found = False
 
     def readCard(self):
-        # Scan for cards
-        self.device.wait_for_tag()
-        (error, tag_type) = self.device.request()
+        if self.card_found:
+            self.wait_card_gone()
+            self.card_found = False
+            return None
+        else:
+            id = self.wait_for_card()
+            self.card_found = True
+            return id
 
-        if not error:
-            print "Card detected."
-            # Perform anti-collision detection to find card uid
-            (error, uid) = self.device.anticoll()
+    def wait_for_card(self):
+        while True:
+            # Scan for cards
+            self.device.wait_for_tag()
+            (error, tag_type) = self.device.request()
+
             if not error:
-                return ''.join((str(x) for x in uid))
+                print "Card detected."
+                # Perform anti-collision detection to find card uid
+                (error, uid) = self.device.anticoll()
+                if not error:
+                    sid = ''.join((str(x) for x in uid))
+                    return sid
 
-        print "No Device ID found."
-        return None
+    def wait_card_gone(self):
+        while True:
+            (error, uid) = self.device.anticoll()
+            if error:
+                print("card is gone")
+                return
 
     @staticmethod
     def cleanup():
