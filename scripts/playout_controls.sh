@@ -358,7 +358,7 @@ case $COMMAND in
     playerpause)
         # pause current track
         # mpc knows "pause", which pauses only, and "toggle" which pauses and unpauses, whatever is needed
-        mpc toggle
+        mpc pause
         ;;
     playerplay)
         # play / resume current track

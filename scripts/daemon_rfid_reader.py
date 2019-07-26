@@ -16,9 +16,13 @@ while True:
         cardid = reader.reader.readCard()
         try:
             # start the player script and pass on the cardid
-            if cardid != None:
-                print("card: " + str(cardid))
-                subprocess.Popen(['aplay', dir_path + '/../misc/ok.wav'])
-                subprocess.call([dir_path + '/rfid_trigger_play.sh --cardid=' + cardid], shell=True)
+            print("card: " + str(cardid))
+
+            if cardid is None:
+                cardid = "pause"
+
+            subprocess.Popen(['aplay', dir_path + '/../misc/ok.wav'])
+            subprocess.call([dir_path + '/rfid_trigger_play.sh --cardid=' + cardid], shell=True)
+
         except OSError as e:
             print "Execution failed:" 
