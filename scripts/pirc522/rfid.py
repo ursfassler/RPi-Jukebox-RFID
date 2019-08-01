@@ -31,7 +31,7 @@ class RFID(object):
     reg_TReloadReg_low = 0x2D
     length = 16
 
-    antenna_gain = 0x04
+    antenna_gain = 0x05
 
     authed = False
     irq = threading.Event()
