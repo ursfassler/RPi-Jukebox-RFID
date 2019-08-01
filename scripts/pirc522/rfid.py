@@ -31,7 +31,8 @@ class RFID(object):
     reg_TReloadReg_low = 0x2D
     length = 16
 
-    antenna_gain = 0x05
+    antenna_gain_detection = 0x04
+    antenna_gain_scanning = 0x05
 
     authed = False
     irq = threading.Event()
@@ -52,7 +53,7 @@ class RFID(object):
         if self.pin_ce != 0:
             GPIO.setup(self.pin_ce, GPIO.OUT)
             GPIO.output(self.pin_ce, 1)
-        self.init()
+        self.init(self.antenna_gain_detection)
 
     def spi_transfer(self, data):
         if self.pin_ce != 0:
@@ -76,7 +77,7 @@ class RFID(object):
         current = self.dev_read(address)
         self.dev_write(address, current & (~mask))
 
-    def init(self):
+    def init(self, antenna_gain):
         self.reset()
         self.dev_write(self.reg_TModeReg, 0x8D)
         self.dev_write(self.reg_TPrescalerReg, 0x3E)
@@ -84,7 +85,7 @@ class RFID(object):
         self.dev_write(self.reg_TReloadReg_high, 0)
         self.dev_write(self.reg_TxASKReg, 0x40)
         self.dev_write(self.reg_ModeReg, 0x3D)
-        self.dev_write(self.reg_RFCfgReg, (self.antenna_gain<<4))
+        self.dev_write(self.reg_RFCfgReg, (antenna_gain<<4))
         self.set_antenna(True)
 
     def set_antenna(self, state):
@@ -205,7 +206,7 @@ class RFID(object):
 
     def wait_for_tag(self):
         # enable IRQ on detect
-        self.init()
+        self.init(self.antenna_gain_detection)
         self.irq.clear()
         self.dev_write(self.reg_ComIrqReg, 0x00)
         self.dev_write(self.reg_ComlEnReg, 0xA0)
@@ -217,7 +218,7 @@ class RFID(object):
             self.dev_write(self.reg_BitFramingReg, 0x87)
             waiting = not self.irq.wait(0.1)
         self.irq.clear()
-        self.init()
+        self.init(self.antenna_gain_scanning)
 
     def reset(self):
         authed = False
